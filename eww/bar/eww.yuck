@@ -1,12 +1,7 @@
 ;; Variables
-(defpoll clock_time :interval "5m" "date +\%I")
-(defpoll clock_minute :interval "5s" "date +\%M")
-(defpoll clock_date :interval "10h" "date '+%d/%m'")
-(defpoll volume_percent :interval "3s" "amixer -D pulse sget Master | grep 'Left:' | awk -F'[][]' '{ print $2 }' | tr -d '%'")
+(defpoll volume_percent :interval "3s" "pactl set-sink-volume @DEFAULT_SINK@ +5% && pactl get-sink-volume @DEFAULT_SINK@ | head -n 1| awk '{print substr($5, 1, length($5)-1)}'")
 (defpoll mic_percent :interval "3s" "amixer -D pulse sget Capture | grep 'Left:' | awk -F'[][]' '{ print $2 }' | tr -d '%'")
 (defpoll brightness_percent :interval "5s" "brightnessctl -m -d intel_backlight | awk -F, '{print substr($4, 0, length($4)-1)}' | tr -d '%'")
-(defpoll battery :interval "15s" "./scripts/battery --bat")
-(defpoll battery_status :interval "1m" "./scripts/battery --bat-st")
 (defpoll memory :interval "15s" "scripts/memory")
 (defpoll memory_used_mb :interval "2m" "scripts/mem-ad used")
 (defpoll memory_total_mb :interval "2m" "scripts/mem-ad total")
@@ -26,11 +21,11 @@
 (defpoll WLAN_ICON :interval "1m" "~/.config/eww/bar/scripts/wifi --ICON")
 
 
-(defpoll song :interval "2s"  "~/.config/eww/bar/scripts/music_info --song")
-(defpoll song_artist :interval "2s"  "~/.config/eww/bar/scripts/music_info --artist")
-(defpoll current_status :interval "1s"  "~/.config/eww/bar/scripts/music_info --time")
-(defpoll song_status :interval "2s"  "~/.config/eww/bar/scripts/music_info --status")
-(defpoll cover_art :interval "2s"  "~/.config/eww/bar/scripts/music_info --cover")
+;; (defpoll song :interval "2s"  "~/.config/eww/bar/scripts/music_info --song")
+;; (defpoll song_artist :interval "2s"  "~/.config/eww/bar/scripts/music_info --artist")
+;; (defpoll current_status :interval "1s"  "~/.config/eww/bar/scripts/music_info --time")
+;; (defpoll song_status :interval "2s"  "~/.config/eww/bar/scripts/music_info --status")
+;; (defpoll cover_art :interval "2s"  "~/.config/eww/bar/scripts/music_info --cover")
 
 (defpoll calendar_day :interval "20h" "date '+%d'")
 (defpoll calendar_year :interval "20h" "date '+%Y'")
@@ -57,13 +52,13 @@
 
 (defwidget bat []
 		(box :class "bat_module" :vexpand "false" :hexpand "false" 
-            (circular-progress :value battery
+            (circular-progress :value {EWW_BATTERY.BAT0.capacity}
                 :class "batbar"
                 :thickness 4
             (button 
                 :class "iconbat"
                 :limit-width 2
-                :tooltip "battery on ${battery}%"
+                :tooltip "battery on ${EWW_BATTERY.BAT0.capacity}%"
                 :show_truncated false
                 :onclick "$HOME/.config/eww/bar/scripts/pop system"
                 :wrap false
@@ -94,14 +89,14 @@
   (eventbox :onhover "${eww} update time_rev=true"
 			  :onhoverlost "${eww} update time_rev=false"
     (box :class "module" :space-evenly "false" :orientation "h" :spacing "3" 
-      (label :text clock_time :class "clock_time_class" )
+      (label :text {formattime(EWW_TIME, "%I")} :class "clock_time_class" )
       (label :text "" :class "clock_time_sep" )
-      (label :text clock_minute :class "clock_minute_class")
+      (label :text {formattime(EWW_TIME, "%M")} :class "clock_minute_class")
 	  (revealer :transition "slideleft"
 			  :reveal time_rev
 			  :duration "350ms"
       (button :class "clock_date_class"
-             :onclick "$HOME/.config/eww/bar/scripts/pop calendar" clock_date
+             :onclick "$HOME/.config/eww/bar/scripts/pop calendar" {formattime(EWW_TIME, "%D")} 
         )
   ))))
   
@@ -139,20 +134,20 @@
 
 
 	;;  Music 
-(defwidget music [] 
-  (eventbox :onhover "${eww} update music_reveal=true"
-			  :onhoverlost "${eww} update music_reveal=false"
-		(box :class "module-2" :orientation "h" :space-evenly "false" :vexpand "false" :hexpand "false" 
-			(box :class "song_cover_art" :vexpand "false" :hexpand "false" :style "background-image: url('${cover_art}');")
-			(button :class "song" :wrap "true" :onclick "~/.config/eww/bar/scripts/pop music" song)
-	    (revealer :transition "slideright"
-			      :reveal music_reveal
-			      :duration "350ms"
-          (box :vexpand "false" :hexpand "false" :oreintation "h" 
-                    (button :class "song_btn_prev" :onclick "~/.config/eww/bar/scripts/music_info --prev" "")
-					(button :class "song_btn_play" :onclick "~/.config/eww/bar/scripts/music_info --toggle" song_status)
-					(button :class "song_btn_next" :onclick "~/.config/eww/bar/scripts/music_info --next" ""))))))
-
+;; (defwidget music [] 
+;;   (eventbox :onhover "${eww} update music_reveal=true"
+;; 			  :onhoverlost "${eww} update music_reveal=false"
+;; 		(box :class "module-2" :orientation "h" :space-evenly "false" :vexpand "false" :hexpand "false" 
+;; 			(box :class "song_cover_art" :vexpand "false" :hexpand "false" :style "background-image: url('${cover_art}');")
+;; 			(button :class "song" :wrap "true" :onclick "~/.config/eww/bar/scripts/pop music" song)
+;; 	    (revealer :transition "slideright"
+;; 			      :reveal music_reveal
+;; 			      :duration "350ms"
+;;           (box :vexpand "false" :hexpand "false" :oreintation "h" 
+;;                     (button :class "song_btn_prev" :onclick "~/.config/eww/bar/scripts/music_info --prev" "")
+;; 					(button :class "song_btn_play" :onclick "~/.config/eww/bar/scripts/music_info --toggle" song_status)
+;; 					(button :class "song_btn_next" :onclick "~/.config/eww/bar/scripts/music_info --next" ""))))))
+;; 
 
 
 (defwidget left []
@@ -183,7 +178,7 @@
 		 :space-evenly false  
          :halign "center"
 		 :class "center_modules"
-(music)))
+))
 
 (defwidget bar_1 []
   (box :class "bar_class"
@@ -194,6 +189,7 @@
     ))
 
 (defwindow bar
+          :monitor 0
           :geometry (geometry :x "0%"
                        :y "9px"
                        :width "98%"
@@ -206,7 +202,7 @@
 (defwidget system []
   (box :class "sys_win" :orientation "v" :space-evenly "false" :hexpand "false" :vexpand "false" :spacing 0
   (box :class "sys_bat_box" :orientation "h" :space-evenly "false"
-      (circular-progress :value battery
+      (circular-progress :value {EWW_BATTERY.BAT0.capacity}
                 :class "sys_bat"
                 :thickness 9
             (label :text ""
@@ -221,13 +217,13 @@
                 :limit-width 9
                 :show_truncated false
                 :wrap false)
-            (label :text "${battery}%"
+            (label :text "${EWW_BATTERY.BAT0.capacity}%"
                 :halign "start"
                 :class "sys_text_bat_sub"
                 :limit-width 22
                 :show_truncated false
                 :wrap false)
-            (label :text "${battery_status}"
+            (label :text "${EWW_BATTERY.status}"
                 :halign "start"
                 :class "sys_text_bat_sub"
                 :limit-width 22
@@ -319,6 +315,7 @@
 
 
 (defwindow system
+    :monitor 0
 	:geometry (geometry :x "-20px" 
 						:y "7%" 
                         :anchor "top right"
@@ -328,20 +325,20 @@
 
 
 
-;;  Music
-(defwidget music_pop []
-		(box :class "music_pop" :orientation "h" :space-evenly "false" :vexpand "false" :hexpand "false"
-			(box :class "music_cover_art" :vexpand "false" :hexpand "false" :style "background-image: url('${cover_art}');")
-			(box :orientation "v" :spacing 20 :space-evenly "false" :vexpand "false" :hexpand "false"
-				(label :halign "center" :class "music" :wrap "true" :limit-width 13 :text song)
-				(label :halign "center" :class "music_artist" :wrap "true" :limit-width 15 :text song_artist)
-				(box :orientation "h" :spacing 15 :halign "center" :space-evenly "false" :vexpand "false" :hexpand "false"
-					(button :class "music_btn_prev" :onclick "~/.config/eww/bar/scripts/music_info --prev" "")
-					(button :class "music_btn_play" :onclick "~/.config/eww/bar/scripts/music_info --toggle" song_status)
-					(button :class "music_btn_next" :onclick "~/.config/eww/bar/scripts/music_info --next" ""))
-				(box :class "music_bar" :halign "center" :vexpand "false" :hexpand "false" :space-evenly "false"
-					(scale :onscroll "mpc -q seek {}" :min 0 :active "true" :max 100 :value current_status)))))
-
+;; ;;  Music
+;; (defwidget music_pop []
+;; 		(box :class "music_pop" :orientation "h" :space-evenly "false" :vexpand "false" :hexpand "false"
+;; 			(box :class "music_cover_art" :vexpand "false" :hexpand "false" :style "background-image: url('${cover_art}');")
+;; 			(box :orientation "v" :spacing 20 :space-evenly "false" :vexpand "false" :hexpand "false"
+;; 				(label :halign "center" :class "music" :wrap "true" :limit-width 13 :text song)
+;; 				(label :halign "center" :class "music_artist" :wrap "true" :limit-width 15 :text song_artist)
+;; 				(box :orientation "h" :spacing 15 :halign "center" :space-evenly "false" :vexpand "false" :hexpand "false"
+;; 					(button :class "music_btn_prev" :onclick "~/.config/eww/bar/scripts/music_info --prev" "")
+;; 					(button :class "music_btn_play" :onclick "~/.config/eww/bar/scripts/music_info --toggle" song_status)
+;; 					(button :class "music_btn_next" :onclick "~/.config/eww/bar/scripts/music_info --next" ""))
+;; 				(box :class "music_bar" :halign "center" :vexpand "false" :hexpand "false" :space-evenly "false"
+;; 					(scale :onscroll "mpc -q seek {}" :min 0 :active "true" :max 100 :value current_status)))))
+;; 
 
 ;;  music
 		(defwindow music_win :stacking "fg" :focusable "false" :screen 1
